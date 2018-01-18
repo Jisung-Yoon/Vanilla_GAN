@@ -1,6 +1,13 @@
 import tensorflow as tf
 
 
+image_summary = tf.summary.image
+scalar_summary = tf.summary.scalar
+histogram_summary = tf.summary.histogram
+merge_summary = tf.summary.merge
+SummaryWriter = tf.summary.FileWriter
+
+
 def linear_layer(inputs, output_size, scope=None, index='', stddev=0.01, with_vars=False):
     with tf.variable_scope(scope or "Linear"):
         if index:
@@ -17,5 +24,6 @@ def linear_layer(inputs, output_size, scope=None, index='', stddev=0.01, with_va
 
     else:
         return layer_before_activation
+
 
 

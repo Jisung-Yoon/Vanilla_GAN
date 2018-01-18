@@ -14,7 +14,6 @@ def main():
     images, _ = load_mnist_datasets(SEED)
     sess = tf.Session()
     model = GAN(sess, latent_size=100, name=NAME)
-
     total_batch = int(len(images) / BATCH_SIZE)
     for epoch in range(TRAINING_EPOCHS):
         average_d_loss = 0
@@ -26,7 +25,7 @@ def main():
             d_loss, g_loss = model.train(latents, batch_images)
             average_d_loss += d_loss / total_batch
             average_g_loss += g_loss / total_batch
-
+        print(average_g_loss, average_d_loss)
         if epoch % 10 == 0:
             print(epoch)
             # if you want to generate images using same latent variables,

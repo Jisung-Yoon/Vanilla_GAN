@@ -17,7 +17,7 @@ class GAN:
         self.result_path = os.path.join('./result', self.name)
         check_and_make_dir()
         check_and_make_dir(self.result_path)
-        self.epochs = 0
+        self.counts = 0
 
         self.latent_size = latent_size
         self.input_size = input_size
@@ -28,12 +28,23 @@ class GAN:
 
         # Make layer
         self.G = self.generator(self.G_input)
-        self.D_data = self.discriminator(self.D_input)
-        self.D_fake = self.discriminator(self.G, reuse=True)
+        self.D_logits_data, self.D_data = self.discriminator(self.D_input)
+        self.D_logits_fake, self.D_fake = self.discriminator(self.G, reuse=True)
 
         # Define loss function
-        self.D_loss = - tf.reduce_mean(tf.log(self.D_data) + tf.log(1 - self.D_fake))
-        self.G_loss = - tf.reduce_mean(tf.log(self.D_fake))
+        self.D_loss_data = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_data, labels=tf.ones_like(self.D_data)))
+        self.D_loss_fake = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_fake, labels=tf.zeros_like(self.D_fake)))
+        self.D_loss = self.D_loss_data + self.D_loss_fake
+
+        self.G_loss = tf.reduce_mean(
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_fake, labels=tf.ones_like(self.D_fake)))
+
+        self.D_summary_loss_data = scalar_summary("D_loss_data", self.D_loss_data)
+        self.D_summary_loss_fake = scalar_summary("D_loss_fake", self.D_loss_fake)
+        self.D_summary_loss = scalar_summary("D_loss", self.D_loss)
+        self.G_summary_loss = scalar_summary("G_loss", self.G_loss)
 
         # Divide trainable variables
         train_vars = tf.trainable_variables()
@@ -47,19 +58,28 @@ class GAN:
         self.sess = sess
         self.sess.run(tf.global_variables_initializer())
 
+        self.G_summary = merge_summary([self.G_summary_loss])
+        self.D_summary = merge_summary(
+            [self.D_summary_loss, self.D_summary_loss_data, self.D_summary_loss_fake])
+
+        self.writer = SummaryWriter("./logs", self.sess.graph)
+
     # Train function
     def train(self, g_input, d_input):
         D_feed_dict = {
             self.G_input: g_input,
             self.D_input: d_input
         }
-        d_loss, _ = self.sess.run([self.D_loss, self.D_train], feed_dict=D_feed_dict)
+        summary_str, d_loss, _ = self.sess.run([self.D_summary, self.D_loss, self.D_train], feed_dict=D_feed_dict)
+        self.writer.add_summary(summary_str, self.counts)
 
         G_feed_dict = {
             self.G_input: g_input
         }
-        g_loss, _ = self.sess.run([self.G_loss, self.G_train], feed_dict=G_feed_dict)
-        self.epochs += 1
+        summary_str, g_loss, _ = self.sess.run([self.G_summary, self.G_loss, self.G_train], feed_dict=G_feed_dict)
+        self.writer.add_summary(summary_str, self.counts)
+
+        self.counts += 1
 
         return d_loss, g_loss
 
@@ -70,7 +90,7 @@ class GAN:
             self.h1 = self.activation_function(self.h1)
 
             self.h2, self.W2, self.b2 = linear_layer(
-                latent_var, self.input_size, scope=scope, index=2, with_vars=True)
+                self.h1, self.input_size, scope=scope, index=2, with_vars=True)
             self.h2 = tf.nn.sigmoid(self.h2)
 
         return self.h2
@@ -86,10 +106,10 @@ class GAN:
             h2 = linear_layer(h1, 64, scope=scope, index=2)
             h2 = self.activation_function(h2)
 
-            h3 = linear_layer(h2, 1, scope=scope, index=3)
-            h3 = tf.nn.sigmoid(h3)
+            h3_logit = linear_layer(h2, 1, scope=scope, index=3)
+            h3 = tf.nn.sigmoid(h3_logit)
 
-        return h3
+        return h3_logit, h3
 
     def generating_images(self, g_input):
         feed_dict = {
