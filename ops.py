@@ -1,6 +1,10 @@
+'''
+    Ops: Define operators to simplify code
+'''
+
 import tensorflow as tf
 
-
+# Define summary operator
 image_summary = tf.summary.image
 scalar_summary = tf.summary.scalar
 histogram_summary = tf.summary.histogram
@@ -8,9 +12,9 @@ merge_summary = tf.summary.merge
 SummaryWriter = tf.summary.FileWriter
 
 
+# Define linear_layer W*x + b
 def linear_layer(inputs, output_size, scope=None, index='', stddev=0.01, with_vars=False):
     with tf.variable_scope(scope or "Linear"):
-
         weight_name = 'weight_' + str(index)
         bias_name = 'bias_' + str(index)
 

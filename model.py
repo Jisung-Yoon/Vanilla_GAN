@@ -1,3 +1,6 @@
+'''
+    Model: GAN
+'''
 import tensorflow as tf
 from util import *
 from ops import *
@@ -12,9 +15,16 @@ class GAN:
                  optimizer=tf.train.AdamOptimizer,
                  learning_rate=0.0002,
                  name='GAN'):
+        '''
+        Args:
+            latent_size: length of latent vector whichi is input of generator
+            input_size: length of input vector (In MNIST case, input_size is 784)
+            activation function or optimizer can be altered to other options.
+        '''
 
         self.name = name
         self.result_path = os.path.join('./result', self.name)
+        self.summary_path = './logs'
         check_and_make_dir()
         check_and_make_dir(self.result_path)
         self.counts = 0
@@ -23,6 +33,7 @@ class GAN:
         self.input_size = input_size
         self.activation_function = activation_function
 
+        # Make placeholder
         self.G_input = tf.placeholder(tf.float32, [None, self.latent_size], name='g_input')
         self.D_input = tf.placeholder(tf.float32, [None, self.input_size], name='d_input')
 
@@ -41,12 +52,13 @@ class GAN:
         self.G_loss = tf.reduce_mean(
             tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_fake, tf.ones_like(self.D_fake)))
 
+        # Set summary operator of loss functions
         self.D_summary_loss_data = scalar_summary("D_loss_data", self.D_loss_data)
         self.D_summary_loss_fake = scalar_summary("D_loss_fake", self.D_loss_fake)
         self.D_summary_loss = scalar_summary("D_loss", self.D_loss)
         self.G_summary_loss = scalar_summary("G_loss", self.G_loss)
 
-        # Divide trainable variables
+        # Divide trainable variables and divide variables
         train_vars = tf.trainable_variables()
         self.D_vars = [x for x in train_vars if x.name.startswith('discriminator')]
         self.G_vars = [x for x in train_vars if x.name.startswith('generator')]
@@ -58,13 +70,13 @@ class GAN:
         self.sess = sess
         self.sess.run(tf.global_variables_initializer())
 
+        # Merge summaries and define summary writer
         self.G_summary = merge_summary([self.G_summary_loss])
         self.D_summary = merge_summary(
             [self.D_summary_loss, self.D_summary_loss_data, self.D_summary_loss_fake])
+        self.writer = SummaryWriter(self.summary_path, self.sess.graph)
 
-        self.writer = SummaryWriter("./logs", self.sess.graph)
-
-    # Train function
+    # Train function (one_step)
     def train(self, g_input, d_input):
         D_feed_dict = {
             self.G_input: g_input,
@@ -83,6 +95,7 @@ class GAN:
 
         return d_loss, g_loss
 
+    # Generator of GAN
     def generator(self, latent_var):
         with tf.variable_scope("generator") as scope:
             self.h1, self.W1, self.b1 = linear_layer(
@@ -95,6 +108,7 @@ class GAN:
 
         return self.h2
 
+    # Discriminator of GAN
     def discriminator(self, inputs, reuse=False):
         with tf.variable_scope("discriminator") as scope:
             if reuse:
@@ -111,6 +125,7 @@ class GAN:
 
         return h3_logits, h3
 
+    # Generate images using given latent variables.
     def generating_images(self, g_input):
         feed_dict = {
             self.G_input: g_input

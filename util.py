@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-
+# Check path, If path does not exist, makes path
 def check_and_make_dir(path='./result'):
     if os.path.exists(path):
         return True

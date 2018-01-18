@@ -1,5 +1,5 @@
 '''
-Downloads: MNIST dataset
+    Downloads: MNIST dataset
 '''
 
 from __future__ import print_function
