@@ -2,6 +2,7 @@ import tensorflow as tf
 from util import *
 from ops import *
 
+
 class GAN:
     def __init__(self,
                  sess,
@@ -9,7 +10,14 @@ class GAN:
                  input_size=28 * 28,
                  activation_function=tf.nn.relu,
                  optimizer=tf.train.AdamOptimizer,
-                 learning_rate=0.0002):
+                 learning_rate=0.0002,
+                 name='GAN'):
+
+        self.name = name
+        self.result_path = os.path.join('./result', self.name)
+        check_and_make_dir()
+        check_and_make_dir(self.result_path)
+        self.epochs = 0
 
         self.latent_size = latent_size
         self.input_size = input_size
@@ -18,17 +26,21 @@ class GAN:
         self.G_input = tf.placeholder(tf.float32, [None, self.latent_size], name='g_input')
         self.D_input = tf.placeholder(tf.float32, [None, self.input_size], name='d_input')
 
-        # Define loss function
+        # Make layer
         self.G = self.generator(self.G_input)
-        self.G_data = self.discriminator(self.D_input)
-        self.G_fake = self.discriminator(self.G, reuse=True)
-        self.D_loss = - (tf.reduce_mean(self.G_data) + tf.log(1 - self.G_fake))
-        self.G_loss = - tf.reduce_mean(tf.log(self.G_fake))
+        self.D_data = self.discriminator(self.D_input)
+        self.D_fake = self.discriminator(self.G, reuse=True)
 
+        # Define loss function
+        self.D_loss = - tf.reduce_mean(tf.log(self.D_data) + tf.log(1 - self.D_fake))
+        self.G_loss = - tf.reduce_mean(tf.log(self.D_fake))
+
+        # Divide trainable variables
         train_vars = tf.trainable_variables()
-        self.D_vars = [x for x in train_vars if x.name.startswith('generator')]
-        self.G_vars = [x for x in train_vars if x.name.startswith('discriminator')]
+        self.D_vars = [x for x in train_vars if x.name.startswith('discriminator')]
+        self.G_vars = [x for x in train_vars if x.name.startswith('generator')]
 
+        # Define optimizer
         self.D_train = optimizer(learning_rate=learning_rate).minimize(self.D_loss, var_list=self.D_vars)
         self.G_train = optimizer(learning_rate=learning_rate).minimize(self.G_loss, var_list=self.G_vars)
 
@@ -37,16 +49,17 @@ class GAN:
 
     # Train function
     def train(self, g_input, d_input):
-        feed_dict_D = {
+        D_feed_dict = {
             self.G_input: g_input,
             self.D_input: d_input
         }
-        d_loss, _ = self.sess.run([self.loss_D, self.train_D], feed_dict=feed_dict_D)
+        d_loss, _ = self.sess.run([self.D_loss, self.D_train], feed_dict=D_feed_dict)
 
-        feed_dict_G = {
+        G_feed_dict = {
             self.G_input: g_input
         }
-        g_loss, _ = self.sess.run([self.loss_G, self.train_G], feed_dict=feed_dict_G)
+        g_loss, _ = self.sess.run([self.G_loss, self.G_train], feed_dict=G_feed_dict)
+        self.epochs += 1
 
         return d_loss, g_loss
 
