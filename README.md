@@ -1,1 +1,1 @@
-# Vailla_GAN
+# Vanilla_GAN
