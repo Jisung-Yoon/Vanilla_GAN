@@ -25,9 +25,8 @@ def main():
             d_loss, g_loss = model.train(latents, batch_images)
             average_d_loss += d_loss / total_batch
             average_g_loss += g_loss / total_batch
-        print(average_g_loss, average_d_loss)
+
         if epoch % 10 == 0:
-            print(epoch)
             # if you want to generate images using same latent variables,
             # please takes out below lines to outside of loop
             test_latents = np.random.normal(size=(BATCH_SIZE, LATENT_SIZE))
