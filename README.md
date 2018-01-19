@@ -21,5 +21,5 @@ First, download dataset with:
 Second, write the main function with configuration you want.
 
 ## Results
-
+Result with same latent variables (0 to 100 epochs)
 ![result](assets/Result.gif)
