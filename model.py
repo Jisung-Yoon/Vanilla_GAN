@@ -44,13 +44,13 @@ class GAN:
 
         # Define loss function
         self.D_loss_data = tf.reduce_mean(
-            tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_data, tf.ones_like(self.D_data)))
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_data, labels=tf.ones_like(self.D_data)))
         self.D_loss_fake = tf.reduce_mean(
-            tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_fake, tf.zeros_like(self.D_fake)))
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_fake, labels=tf.zeros_like(self.D_fake)))
         self.D_loss = self.D_loss_data + self.D_loss_fake
 
         self.G_loss = tf.reduce_mean(
-            tf.nn.sigmoid_cross_entropy_with_logits(self.D_logits_fake, tf.ones_like(self.D_fake)))
+            tf.nn.sigmoid_cross_entropy_with_logits(logits=self.D_logits_fake, labels=tf.ones_like(self.D_fake)))
 
         # Set summary operator of loss functions
         self.D_summary_loss_data = scalar_summary("D_loss_data", self.D_loss_data)
