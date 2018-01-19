@@ -1,2 +1,5 @@
 /data
 /result
+/logs
+/.idea
+/__pycache__
