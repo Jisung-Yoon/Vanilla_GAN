@@ -22,4 +22,4 @@ Second, write the main function with configuration you want.
 
 ## Results
 
-![result](assets/result.png)
+![result](assets/Result.gif)
